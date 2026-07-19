@@ -1,0 +1,47 @@
+/* DataSteward Hub — "corrected ledger" workbench
+   Palette: ink #101A24 · surface #F6F7F5 · verdigris #0E7A64 · amber #A96A12 · claret #9E3039 · line #DCE0DA */
+
+:root {
+  --ink: #101A24;
+  --ink-soft: #2A3947;
+  --surface: #F6F7F5;
+  --cell: #FFFFFF;
+  --line: #DCE0DA;
+  --line-strong: #B9C0B8;
+  --text: #26313B;
+  --text-dim: #66727C;
+  --verdigris: #0E7A64;
+  --verdigris-soft: #E3F0EC;
+  --amber: #A96A12;
+  --amber-soft: #F6EDDC;
+  --claret: #9E3039;
+  --claret-soft: #F5E4E5;
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-data: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+button { font-family: var(--font-body); cursor: pointer; }
+input, select { font-family: var(--font-data); }
+
+:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 5px; }
+::-webkit-scrollbar-track { background: transparent; }

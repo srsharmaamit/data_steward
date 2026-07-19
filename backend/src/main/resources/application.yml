@@ -1,0 +1,28 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: datasteward-hub-api
+  datasource:
+    url: jdbc:postgresql://${STAGING_DB_HOST:localhost}:5432/${STAGING_DB_NAME:staging}
+    username: ${STAGING_DB_USER:steward}
+    password: ${STAGING_DB_PASSWORD:changeme}   # mount from a Kubernetes Secret / Vault
+  jpa:
+    hibernate:
+      ddl-auto: update          # replace with Flyway migrations for production
+    open-in-view: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:https://keycloak.tenant.svc/realms/tenant-alpha-bank}
+
+datasteward:
+  tenant-id: ${TENANT_ID:tenant-alpha-bank}
+  lake:
+    target: ${LAKE_TARGET:iceberg}          # iceberg | postgres
+    iceberg-table: ${ICEBERG_TABLE:lake.alpha_bank.customer_master}
+    warehouse: ${ICEBERG_WAREHOUSE:s3://alpha-bank-lake/warehouse}
+  cors:
+    allowed-origin: ${UI_ORIGIN:https://your-vercel-app.vercel.app}

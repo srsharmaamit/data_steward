@@ -1,0 +1,45 @@
+# One release of this manifest per tenant, into that tenant's namespace.
+# Pair with a NetworkPolicy denying cross-namespace ingress and a ResourceQuota.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datasteward-api
+  namespace: tenant-alpha-bank
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: datasteward-api }
+  template:
+    metadata:
+      labels: { app: datasteward-api }
+    spec:
+      containers:
+        - name: api
+          image: registry.internal/datasteward-hub-api:1.0.0
+          ports: [{ containerPort: 8080 }]
+          env:
+            - name: TENANT_ID
+              value: tenant-alpha-bank
+            - name: OIDC_ISSUER_URI
+              value: https://keycloak.tenant-alpha-bank.svc/realms/tenant-alpha-bank
+            - name: UI_ORIGIN
+              value: https://your-vercel-app.vercel.app
+            - name: STAGING_DB_HOST
+              value: staging-postgres.tenant-alpha-bank.svc
+            - name: STAGING_DB_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: staging-db, key: password }
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { cpu: "1", memory: 1Gi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datasteward-api
+  namespace: tenant-alpha-bank
+spec:
+  selector: { app: datasteward-api }
+  ports: [{ port: 80, targetPort: 8080 }]
