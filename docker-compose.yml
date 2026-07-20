@@ -1,0 +1,8 @@
+services:
+  stewarddata-hub:
+    build: .
+    image: stewarddata-hub:latest
+    container_name: stewarddata-hub
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
