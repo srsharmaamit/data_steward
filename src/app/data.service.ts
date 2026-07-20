@@ -1,5 +1,6 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { AuditEvent, ColumnDef, DataRecord, Dataset, Role, UserContext } from './models';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { AuditEvent, ColumnDef, DataRecord, Dataset, UserContext } from './models';
+import { AuthService } from './auth.service';
 
 /**
  * Demo data layer. Set API_URL to your Spring Boot service (e.g. the tenant's
@@ -60,9 +61,11 @@ const now = () => new Date().toISOString().replace('T', ' ').slice(0, 19) + ' UT
 @Injectable({ providedIn: 'root' })
 export class DataService {
 
-  readonly user = signal<UserContext>({
-    name: 'A. Sharma', role: 'DATA_STEWARD', tenant: 'tenant-alpha-bank', piiAccess: true
-  });
+  private auth = inject(AuthService);
+
+  /** Identity now comes from the login session. */
+  readonly user = computed<UserContext & { email?: string; admin?: boolean }>(() =>
+    this.auth.user() ?? { name: 'Guest', role: 'ANALYST', tenant: 'tenant-alpha-bank', piiAccess: false });
 
   readonly datasets = signal<Dataset[]>([
     {
@@ -98,14 +101,6 @@ export class DataService {
     this.audit.update(a => [{ id: ++SEQ, at: now(), ...e }, ...a]);
   }
 
-  setRole(role: Role) {
-    this.user.update(u => ({
-      ...u,
-      role,
-      piiAccess: role !== 'ANALYST',
-      name: role === 'APPROVER' ? 'M. Boyd' : role === 'ANALYST' ? 'R. Chen' : 'A. Sharma'
-    }));
-  }
 
   select(id: string) { this.selectedId.set(id); }
 
@@ -179,4 +174,42 @@ export class DataService {
     this.selectedId.set(id);
     this.log({ actor: this.user().name, role: this.user().role, action: 'UPLOAD', datasetId: id, note: '20 parts streamed to staging via pre-signed URLs' });
   }
+
+  /** ---- Platform admin: tenant user directory (demo) ---- */
+  readonly platformUsers = signal([
+    { email: 'a.sharma@alpha.bank', name: 'A. Sharma', role: 'DATA_STEWARD', active: true,  lastSeen: '2026-07-19 14:02 UTC' },
+    { email: 'm.boyd@alpha.bank',   name: 'M. Boyd',   role: 'APPROVER',     active: true,  lastSeen: '2026-07-18 09:41 UTC' },
+    { email: 'r.chen@alpha.bank',   name: 'R. Chen',   role: 'ANALYST',      active: true,  lastSeen: '2026-07-17 16:20 UTC' },
+    { email: 'j.crawford@alpha.bank', name: 'J. Crawford', role: 'DATA_STEWARD', active: true, lastSeen: '2026-07-11 15:05 UTC' },
+    { email: 'ingest-svc@alpha.bank', name: 'ingest-svc', role: 'DATA_STEWARD', active: true, lastSeen: '2026-07-14 06:12 UTC' },
+    { email: 'p.osei@alpha.bank',   name: 'P. Osei',   role: 'ANALYST',      active: false, lastSeen: '2026-05-02 11:00 UTC' }
+  ]);
+
+  toggleUserActive(email: string) {
+    this.platformUsers.update(list =>
+      list.map(u => u.email === email ? { ...u, active: !u.active } : u));
+  }
+
+  /** ---- Dashboard stats ---- */
+  readonly stats = computed(() => {
+    const ds = this.datasets();
+    return {
+      inReview: ds.filter(d => d.status === 'IN_REVIEW').length,
+      pending: ds.filter(d => d.status === 'PENDING_APPROVAL').length,
+      published: ds.filter(d => d.status === 'PUBLISHED').length,
+      flagged: ds.reduce((n, d) => n + d.flaggedCount, 0),
+      records: ds.reduce((n, d) => n + d.recordCount, 0)
+    };
+  });
+
+  /** Uploads per weekday for the dashboard chart (demo series + live additions). */
+  readonly uploadTrend = computed(() => {
+    const base = [2, 4, 1, 3, 5, 2, 1];
+    const extra = Math.max(0, this.datasets().length - 3);
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, i) => ({
+      day, count: base[i] + (i === 5 ? extra : 0)
+    }));
+  });
+
+  datasetById(id: string) { return this.datasets().find(d => d.id === id); }
 }
