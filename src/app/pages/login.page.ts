@@ -119,10 +119,16 @@ import { IconComponent } from '../icon.component';
       </div>
     </div>
 
-    <!-- Right panel - Image -->
+    <!-- Right panel - Local backdrop (no external requests) -->
     <div class="hidden lg:block lg:w-1/2 bg-muted relative overflow-hidden">
-      <div class="absolute inset-0 bg-cover bg-center"
-           style="background-image: url('https://images.pexels.com/photos/12732218/pexels-photo-12732218.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2')"></div>
+      <div class="absolute inset-0"
+           style="background:
+             radial-gradient(ellipse at 20% 15%, hsl(217 60% 28% / 0.9) 0%, transparent 55%),
+             radial-gradient(ellipse at 85% 80%, hsl(199 65% 32% / 0.7) 0%, transparent 50%),
+             radial-gradient(ellipse at 70% 25%, hsl(230 50% 24% / 0.8) 0%, transparent 45%),
+             linear-gradient(160deg, hsl(222 47% 11%) 0%, hsl(221 45% 16%) 55%, hsl(222 47% 9%) 100%)"></div>
+      <div class="absolute inset-0 opacity-[0.18]"
+           style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cpath d='M0 30h120M0 60h120M0 90h120M30 0v120M60 0v120M90 0v120' stroke='%2394b8e0' stroke-width='0.5'/%3E%3Ccircle cx='30' cy='30' r='2' fill='%2394b8e0'/%3E%3Ccircle cx='90' cy='60' r='2' fill='%2394b8e0'/%3E%3Ccircle cx='60' cy='90' r='2' fill='%2394b8e0'/%3E%3C/svg%3E&quot;)"></div>
       <div class="absolute inset-0 bg-primary/10 mix-blend-multiply"></div>
       <div class="absolute bottom-8 left-8 right-8 text-white">
         <h2 class="font-heading font-bold text-3xl mb-2">Enterprise Data Governance</h2>
