@@ -1,62 +1,69 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
-import { Role, UserContext } from './models';
-
-export interface DemoAccount {
-  email: string;
-  name: string;
-  role: Role;
-  admin: boolean;
-  title: string;
-}
-
-export const DEMO_ACCOUNTS: DemoAccount[] = [
-  { email: 'a.sharma@alpha.bank',  name: 'A. Sharma',  role: 'DATA_STEWARD', admin: true,  title: 'Data Steward · platform admin' },
-  { email: 'm.boyd@alpha.bank',    name: 'M. Boyd',    role: 'APPROVER',     admin: false, title: 'Approver · second-person sign-off' },
-  { email: 'r.chen@alpha.bank',    name: 'R. Chen',    role: 'ANALYST',      admin: false, title: 'Analyst · read-only, no PII' }
-];
-
-const STORE_KEY = 'dsh.session';
+import { CanActivateFn, Router, ActivatedRouteSnapshot } from '@angular/router';
+import { ApiService, ApiUser } from './api.service';
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  readonly user = signal<(UserContext & { email: string; admin: boolean }) | null>(this.restore());
+  private api = inject(ApiService);
+  readonly user = signal<ApiUser | null>(null);
+  readonly loading = signal<boolean>(true);
 
-  private restore() {
+  constructor() { this.init(); }
+
+  private async init() {
+    const token = localStorage.getItem('token');
+    if (!token) { this.loading.set(false); return; }
     try {
-      const raw = localStorage.getItem(STORE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+      const u = await this.api.fetchMe(token);
+      this.user.set(u);
+    } catch {
+      this.logout();
+    } finally {
+      this.loading.set(false);
+    }
   }
 
-  /** Demo login: any listed account + password "demo123". */
-  login(email: string, password: string): string | null {
-    const acc = DEMO_ACCOUNTS.find(a => a.email === email.trim().toLowerCase());
-    if (!acc) return 'No account with that email. Use one of the demo accounts below.';
-    if (password !== 'demo123') return 'Wrong password. All demo accounts use demo123.';
-    const u = {
-      name: acc.name, role: acc.role, tenant: 'tenant-alpha-bank',
-      piiAccess: acc.role !== 'ANALYST', email: acc.email, admin: acc.admin
-    };
-    this.user.set(u);
-    try { localStorage.setItem(STORE_KEY, JSON.stringify(u)); } catch {}
-    return null;
+  async login(email: string, password: string) {
+    const { access_token, user } = await this.api.login(email, password);
+    localStorage.setItem('token', access_token);
+    this.user.set(user);
+    return user;
+  }
+
+  async register(email: string, password: string, name: string, role: ApiUser['role']) {
+    const { access_token, user } = await this.api.register(email, password, name, role);
+    localStorage.setItem('token', access_token);
+    this.user.set(user);
+    return user;
   }
 
   logout() {
+    localStorage.removeItem('token');
     this.user.set(null);
-    try { localStorage.removeItem(STORE_KEY); } catch {}
+    this.api.setCurrentUser(null);
+  }
+
+  refreshUser(u: ApiUser) { this.user.set({ ...u }); }
+
+  hasRole(allowed: string[]) {
+    const u = this.user();
+    return !!u && allowed.includes(u.role);
   }
 }
 
-export const authGuard: CanActivateFn = () => {
+export const protectedGuard: CanActivateFn = async (route: ActivatedRouteSnapshot) => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  return auth.user() ? true : router.createUrlTree(['/login']);
+  while (auth.loading()) await new Promise(r => setTimeout(r, 40));
+  if (!auth.user()) return router.createUrlTree(['/login']);
+  const allowed = route.data['roles'] as string[] | undefined;
+  if (allowed && !auth.hasRole(allowed)) return router.createUrlTree(['/dashboard']);
+  return true;
 };
 
-export const adminGuard: CanActivateFn = () => {
+export const publicGuard: CanActivateFn = async () => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  return auth.user()?.admin ? true : router.createUrlTree(['/dashboard']);
+  while (auth.loading()) await new Promise(r => setTimeout(r, 40));
+  return auth.user() ? router.createUrlTree(['/dashboard']) : true;
 };

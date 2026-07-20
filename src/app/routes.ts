@@ -1,33 +1,36 @@
 import { Routes } from '@angular/router';
-import { authGuard, adminGuard } from './auth.service';
 import { LayoutComponent } from './layout.component';
-import { LoginComponent } from './pages/login.component';
-import { DashboardComponent } from './pages/dashboard.component';
-import { DatasetsComponent } from './pages/datasets.component';
-import { DatasetDetailComponent } from './pages/dataset-detail.component';
-import { UploadComponent } from './pages/upload.component';
-import { ApprovalsComponent } from './pages/approvals.component';
-import { AuditPageComponent } from './pages/audit-page.component';
-import { AdminComponent } from './pages/admin.component';
-import { SettingsComponent } from './pages/settings.component';
+import { protectedGuard, publicGuard } from './auth.service';
+import { LoginPage } from './pages/login.page';
+import { DashboardPage } from './pages/dashboard.page';
+import { UploadPage } from './pages/upload.page';
+import { DatasetsPage } from './pages/datasets.page';
+import { DatasetDetailPage } from './pages/dataset-detail.page';
+import { ApprovalsPage } from './pages/approvals.page';
+import { AuditLogsPage } from './pages/audit-logs.page';
+import { AdminPage } from './pages/admin.page';
+import { SettingsPage } from './pages/settings.page';
+
+const ALL = ['admin', 'data_steward', 'approver'];
 
 export const routes: Routes = [
-  { path: 'login', component: LoginComponent },
+  { path: 'login', component: LoginPage, canActivate: [publicGuard] },
   {
     path: '',
     component: LayoutComponent,
-    canActivate: [authGuard],
+    canActivate: [protectedGuard],
+    canActivateChild: [protectedGuard],
     children: [
+      { path: 'dashboard', component: DashboardPage, data: { roles: ALL } },
+      { path: 'upload', component: UploadPage, data: { roles: ['admin', 'data_steward'] } },
+      { path: 'datasets', component: DatasetsPage, data: { roles: ALL } },
+      { path: 'datasets/:id', component: DatasetDetailPage, data: { roles: ALL } },
+      { path: 'approvals', component: ApprovalsPage, data: { roles: ['admin', 'approver'] } },
+      { path: 'audit-logs', component: AuditLogsPage, data: { roles: ALL } },
+      { path: 'admin', component: AdminPage, data: { roles: ['admin'] } },
+      { path: 'settings', component: SettingsPage, data: { roles: ALL } },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
-      { path: 'dashboard', component: DashboardComponent },
-      { path: 'datasets', component: DatasetsComponent },
-      { path: 'datasets/:id', component: DatasetDetailComponent },
-      { path: 'upload', component: UploadComponent },
-      { path: 'approvals', component: ApprovalsComponent },
-      { path: 'audit', component: AuditPageComponent },
-      { path: 'admin', component: AdminComponent, canActivate: [adminGuard] },
-      { path: 'settings', component: SettingsComponent }
-    ]
+    ],
   },
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', redirectTo: 'dashboard' },
 ];
