@@ -19,8 +19,11 @@ import { IconComponent } from '../icon.component';
         <div class="flex items-center gap-3">
           <i-lucide name="database" class="h-10 w-10 text-primary"></i-lucide>
           <div>
-            <h1 class="font-heading font-bold text-2xl tracking-tight">DataSteward Hub</h1>
-            <p class="text-sm text-muted-foreground">Enterprise Data Review Platform</p>
+            <div class="flex items-center gap-2">
+              <h1 class="font-heading font-bold text-2xl tracking-tight">DataSteward Hub</h1>
+              <span class="status-badge border-transparent bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">Angular</span>
+            </div>
+            <p class="text-sm text-muted-foreground">Enterprise Data Review Platform &middot; Angular Edition</p>
           </div>
         </div>
 
